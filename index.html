@@ -31,13 +31,14 @@
       <span aria-hidden="true"></span>
     </a>
   </div>
-    <div id="tcwm-navbar" class="navbar-menu">
+  <div id="tcwm-navbar" class="navbar-menu">
     <div class="navbar-start nav-center">
       <a class="navbar-item" href="#overview">Overview</a>
-      <a class="navbar-item" href="#contributions">Contributions</a>
-      <a class="navbar-item" href="#datasets">Datasets</a>
       <a class="navbar-item" href="#method">Method</a>
+      <a class="navbar-item" href="#theory">Theory</a>
+      <a class="navbar-item" href="#datasets">Environments</a>
       <a class="navbar-item" href="#results">Results</a>
+      <a class="navbar-item" href="#analysis">Analysis</a>
     </div>
   </div>
 </nav>
@@ -48,7 +49,7 @@
       <div class="columns is-centered">
         <div class="column has-text-centered">
           <h1 class="title is-1 publication-title">Learning Task-Centric World Models from Visual Foundations</h1>
-          <p class="tagline">A task-centric latent world model that distills high-dimensional visual foundation embeddings into compact, planning-relevant dynamics.</p>
+          <p class="tagline">A task-centric latent world model that turns frozen foundation embeddings into compact, planning-relevant dynamics for reward-free offline visual planning.</p>
         </div>
       </div>
     </div>
@@ -60,14 +61,10 @@
     <div class="abstract-block">
       <h2 class="title is-3 has-text-centered">Abstract</h2>
       <p class="abstract-text">
-        World models enable agents to predict the evolution of dynamics under control signals. However, semantic representations
-        in world models are often overly rich or misaligned with task objectives, which can introduce unnecessary complexity,
-        degrade physical fidelity, and reduce planning efficiency. We propose a task-centric world modeling framework that
-        transforms high-dimensional visual foundation embeddings into a compact latent space that preserves task-relevant
-        information while discarding redundant factors. The resulting representation is partially aligned with critical physical
-        properties and remains semantically faithful for accurate prediction and planning. Empirically, our method enables
-        zero-shot planning across diverse environments (for example, Robomimic and D4RL), achieving stronger world-model quality
-        and more precise control compared with prior approaches.
+        World models enable agents to predict the evolution of dynamics under control signals. However, their latents are often either learned from pixels with limited semantic structure or inherited directly from frozen visual foundation models with excessive task-irrelevant detail, yielding state spaces that are poorly matched to downstream planning. We target reward-free offline visual planning, where the model is trained from fixed trajectories and later plans to a goal observation without reward supervision or online interaction.
+      </p>
+      <p class="abstract-text">
+        We propose <strong>TC-WM</strong>, a framework for turning foundation-model embeddings into compact, task-sufficient world representations. The key design is to treat the pretrained embedding space as a <em>semantic scaffold</em> rather than as the final state space: TC-WM linearly projects high-dimensional visual embeddings into a compact latent, aligns a designated subspace with the agent's physical state via contrastive learning, and reconstructs embeddings to preserve useful visual structure. This combines the generality of foundation features with the controllability of task-centric dynamics. Theoretically, we show that TC-WM suffices to identify the task-centric latent factors up to an invertible transformation. Empirically, TC-WM enables zero-shot planning across diverse environments (e.g., <code>Robomimic</code> and <code>D4RL</code>), achieving better world modeling quality and more precise control compared to state-of-the-art world model approaches.
       </p>
     </div>
   </div>
@@ -75,35 +72,21 @@
 
 <section class="section" id="overview">
   <div class="container is-max-desktop">
-    <h2 class="title is-3">Overview / Motivation</h2>
+    <h2 class="title is-3">Overview</h2>
     <div class="content">
       <p>
-        Modern world models increasingly reuse frozen visual foundation embeddings as latent states. While this improves transfer,
-        the embeddings are optimized for broad semantics, not necessarily for control-relevant dynamics. As a result, latent spaces can
-        retain texture and appearance details that are unnecessary for decision-making, reducing planning efficiency and interpretability.
+        World-model research has crystallised into three architectural branches that differ in the level at which dynamics are predicted. <strong>Generative</strong> models predict future observations directly in pixel space &mdash; rich but heavy. <strong>Latent</strong> models compress the scene into a learned state space and predict dynamics within it. <strong>Embedding</strong> models (e.g., DINO-WM, V-JEPA) skip representation learning by rolling out directly in the frozen feature space of a pre-trained foundation model.
       </p>
       <p>
-        TC-WM addresses this gap by learning a compact task-centric latent space on top of foundation embeddings. The model preserves
-        predictive information needed for future task dynamics while discarding redundant semantics, enabling more stable and precise
-        zero-shot planning across diverse offline benchmarks.
+        Foundation embeddings are useful not because they are ideal states, but because they are a strong <em>semantic coordinate system</em> from which states can be extracted. They are optimised for broad semantics &mdash; textures, lighting, background &mdash; not for control. When used directly as a world-model latent, the model spends capacity on irrelevant variation. The burden is acute under high-dimensional action spaces: <code>Maze</code> uses 2-D actions, but <code>Robomimic</code> requires a 7-DoF arm with 43-D proprioceptive state, where every irrelevant latent dimension is wasted planning capacity.
+      </p>
+      <p>
+        <strong>TC-WM</strong> treats the foundation embedding as a reusable visual scaffold and learns compact latent dynamics above it. A designated subspace aligns with physical proprioception via contrastive learning; the complementary subspace stays anchored to the pretrained embedding via reconstruction, preserving useful visual structure while filtering nuisance variation. This decomposition yields an identifiability guarantee for the task-relevant latent and consistent gains in both world-model quality and offline planning.
       </p>
     </div>
-    <img class="figure-img figure-main" src="./static/figures/png/network.png" alt="TC-WM architecture showing task-centric latent extraction from visual foundation embeddings">
-    <p class="figure-caption">TC-WM architecture: frozen visual embeddings are distilled into a compact latent world model with partial task alignment and dynamics prediction.</p>
-  </div>
-</section>
 
-<section class="section" id="contributions">
-  <div class="container is-max-desktop">
-    <h2 class="title is-3">Contributions</h2>
-    <div class="content">
-      <ul>
-        <li>A task-centric world modeling framework that extracts compact planning-relevant latents from high-dimensional visual foundation features.</li>
-        <li>Partial alignment between latent subspace and task-critical physical variables (for example proprioception), balancing semantic fidelity and controllability.</li>
-        <li>Joint latent dynamics and task dynamics objectives that improve predictive sufficiency for downstream goal-conditioned planning.</li>
-        <li>Consistent gains in world-model quality and planning performance across 9 environments spanning Robomimic, D4RL, and DMControl offline settings.</li>
-      </ul>
-    </div>
+    <img class="figure-img" src="./static/figures/png/teaser_five_panel.png" alt="Robomimic highlight: success rate, latent-rollout MSE, linear probing on Lift and Can, and anti-collapse comparison">
+    <p class="figure-caption"><strong>Robomimic highlight.</strong> (1) Success rate. (2) Latent-rollout MSE. (3)&ndash;(4) Linear probes on <code>Lift</code> and <code>Can</code>. (5) Anti-collapse: TC-WM makes better use of a compact latent space than direct-on-embedding baselines.</p>
   </div>
 </section>
 
@@ -112,57 +95,67 @@
     <h2 class="title is-3">Method</h2>
     <div class="content">
       <p>
-        TC-WM builds a world model in three stages: encode observations with a frozen visual backbone, project embeddings to a compact latent space,
-        and learn temporal dynamics for both latent transitions and task-centric variables. Instead of predicting directly in the original visual embedding space,
-        TC-WM reshapes representation structure for physical consistency and planning.
+        TC-WM learns a compact rollout state <em>z<sub>t</sub></em> on top of frozen visual embeddings, using proprioception to identify the dimensions needed for physical dynamics. The pipeline has six components:
       </p>
+      <ul>
+        <li><strong>Joint Embedding</strong> &mdash; concatenate a frozen visual feature (e.g., DINOv2) with a trainable proprioception embedding to form the input <em>x<sub>t</sub></em>.</li>
+        <li><strong>Latent Encoder</strong> &mdash; a linear projection <em>q(z<sub>t</sub> | x<sub>t</sub>)</em> compresses <em>x<sub>t</sub></em> into a compact latent <em>z<sub>t</sub></em>.</li>
+        <li><strong>TC Alignment</strong> &mdash; factorise <em>z<sub>t</sub> = [z<sup>s</sup><sub>t</sub>, z<sup>c</sup><sub>t</sub>]</em>; align <em>z<sup>s</sup><sub>t</sub></em> with proprioception via an InfoNCE contrastive loss, with an &ell;<sub>1</sub> penalty that automatically <em>selects</em> the task-centric block by sparsity.</li>
+        <li><strong>Latent Dynamics</strong> &mdash; a ViT transition predicts the next latent <em>&zcirc;<sub>t+1</sub></em> from history.</li>
+        <li><strong>TC Dynamics</strong> &mdash; a head predicts next-step proprioception directly from the latent history, encouraging task-centric temporal structure.</li>
+        <li><strong>Embedding Decoder</strong> &mdash; a linear decoder reconstructs <em>x<sub>t</sub></em> from <em>z<sub>t</sub></em>, anchoring the compact latent to the foundation-embedding manifold and preventing collapse.</li>
+      </ul>
       <p>
-        The key design is partial alignment: only a designated latent subspace is aligned with observed task-relevant signals, while the remaining latent factors
-        preserve complementary semantics. This decomposition improves controllability without collapsing representation capacity.
+        The full objective combines latent and proprioceptive dynamics terms with the alignment and reconstruction losses:
+      </p>
+      <p style="text-align:center; font-style:italic;">
+        L<sub>all</sub> = L<sup>z</sup><sub>dyn</sub> + L<sup>s</sup><sub>dyn</sub> + &lambda;<sub>align</sub> L<sub>align</sub> + &lambda;<sub>rec</sub> L<sub>rec</sub>.
       </p>
     </div>
+    <img class="figure-img figure-main" src="./static/figures/png/network.png" alt="TC-WM architecture: linear projection of joint visual+proprioception embeddings into a compact latent with task-centric alignment and dynamics">
+    <p class="figure-caption"><strong>Architecture.</strong> TC-WM builds a world model by extracting a compact, task-centric latent from frozen visual embeddings using proprioception as side information. Latent dynamics and proprioception prediction are trained jointly with alignment and reconstruction objectives.</p>
+  </div>
+</section>
 
-    <div id="datasets">
-      <p class="figure-caption">Dataset previews used for qualitative inspection across navigation and control tasks.</p>
-      <div class="dataset-row">
-        <div class="dataset-cell">
-          <div class="demo-card">
-            <img class="dataset-gif" src="./static/datasets/gifs/wall_single_episode_003.gif" alt="Dataset preview gif for wall single episode 003">
-          </div>
-        </div>
-        <div class="dataset-cell">
-          <div class="demo-card">
-            <img class="dataset-gif" src="./static/datasets/gifs/point_maze_episode_009.gif" alt="Dataset preview gif for point maze episode 009">
-          </div>
-        </div>
-        <div class="dataset-cell">
-          <div class="demo-card">
-            <img class="dataset-gif" src="./static/datasets/gifs/episode_006.gif" alt="Dataset preview gif for episode 006">
-          </div>
-        </div>
-        <div class="dataset-cell">
-          <div class="demo-card">
-            <img class="dataset-gif" src="./static/datasets/gifs/episode_00009.gif" alt="Dataset preview gif for episode 00009">
-          </div>
-        </div>
-      </div>
-      <div class="dataset-row">
-        <div class="dataset-cell">
-          <div class="demo-card">
-            <img class="dataset-gif" src="./static/datasets/gifs/episode_00006.gif" alt="Dataset preview gif for episode 00006">
-          </div>
-        </div>
-        <div class="dataset-cell">
-          <div class="demo-card">
-            <img class="dataset-gif" src="./static/datasets/gifs/episode_00004.gif" alt="Dataset preview gif for episode 00004">
-          </div>
-        </div>
-        <div class="dataset-cell">
-          <div class="demo-card">
-            <img class="dataset-gif" src="./static/datasets/gifs/episode_00002.gif" alt="Dataset preview gif for episode 00002">
-          </div>
-        </div>
-      </div>
+<section class="section" id="theory">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3">Theoretical Guarantee</h2>
+    <div class="content">
+      <p>
+        Under standard contextual-dynamics and latent&ndash;observed variability assumptions, plus the partial-alignment objective above, the learned latent <em>z<sub>t</sub></em> is <strong>block-wise identifiable</strong> and the task-centric block <em>z<sup>s</sup><sub>t</sub></em> is recovered <strong>up to an affine map</strong>:
+      </p>
+      <p style="text-align:center;">
+        &zcirc;<sub>t</sub> = h<sub>z</sub>(z<sub>t</sub>) &nbsp;(invertible, C<sup>1</sup>) &nbsp;&nbsp;&nbsp;&nbsp; z<sup>s</sup><sub>t</sub> = A &zcirc;<sup>s</sup><sub>t</sub> + b.
+      </p>
+      <p>
+        Intuitively, the observable joint distribution over neighbouring embeddings determines an operator family that is a similarity transform of a diagonal operator indexed by <em>p(x<sub>t</sub> | z<sub>t</sub>)</em>. Injective context operators make this diagonalisation unique up to a smooth reparameterisation, and the alignment loss <em>actively produces</em> the latent&ndash;observed diversity that traditionally has to be <em>assumed</em>. Thus the linear projection plus contrastive alignment in TC-WM can recover a compact, physically-meaningful latent &mdash; not merely a predictively-accurate one.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="datasets">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3">Environments</h2>
+    <div class="content">
+      <p>
+        We evaluate on nine offline visual-control environments spanning three task families: <strong>navigation</strong> (<code>Maze</code>, <code>Wall</code>), <strong>manipulation</strong> (<code>Push-T</code> and Robomimic's <code>Lift</code>, <code>Can</code>, <code>Square</code>), and <strong>locomotion</strong> from DeepMind Control Suite (<code>Reacher</code>, <code>Cheetah</code>, <code>Hopper</code>). Action and proprioception dimensions vary from 2-D to 7-DoF / 43-D, stressing the importance of a task-centric latent under high-dimensional control.
+      </p>
+    </div>
+    <img class="figure-img" src="./static/figures/png/datasets.png" alt="The nine offline environments: Maze, Wall, Push-T, Lift, Can, Square, Reacher, Cheetah, Hopper">
+    <p class="figure-caption"><strong>Nine offline visual-control environments</strong> spanning navigation, manipulation, and locomotion.</p>
+
+    <p class="figure-caption" style="margin-top:1em;">Sample trajectories used for qualitative inspection.</p>
+    <div class="dataset-row">
+      <div class="dataset-cell"><div class="demo-card"><img class="dataset-gif" src="./static/datasets/gifs/wall_single_episode_003.gif" alt="Wall navigation trajectory"></div></div>
+      <div class="dataset-cell"><div class="demo-card"><img class="dataset-gif" src="./static/datasets/gifs/point_maze_episode_009.gif" alt="Point-maze navigation trajectory"></div></div>
+      <div class="dataset-cell"><div class="demo-card"><img class="dataset-gif" src="./static/datasets/gifs/episode_006.gif" alt="Manipulation trajectory"></div></div>
+      <div class="dataset-cell"><div class="demo-card"><img class="dataset-gif" src="./static/datasets/gifs/episode_00009.gif" alt="Manipulation trajectory"></div></div>
+    </div>
+    <div class="dataset-row">
+      <div class="dataset-cell"><div class="demo-card"><img class="dataset-gif" src="./static/datasets/gifs/episode_00006.gif" alt="Manipulation trajectory"></div></div>
+      <div class="dataset-cell"><div class="demo-card"><img class="dataset-gif" src="./static/datasets/gifs/episode_00004.gif" alt="Manipulation trajectory"></div></div>
+      <div class="dataset-cell"><div class="demo-card"><img class="dataset-gif" src="./static/datasets/gifs/episode_00002.gif" alt="Manipulation trajectory"></div></div>
     </div>
   </div>
 </section>
@@ -170,37 +163,72 @@
 <section class="section" id="results">
   <div class="container is-max-desktop">
     <h2 class="title is-3">Results</h2>
-
     <div class="content">
       <p>
-        Quantitatively, TC-WM achieves stronger latent prediction accuracy and competitive image-space rollout quality versus prior world-model baselines.
-        The performance advantage is especially clear in long-horizon planning with high-dimensional action spaces.
+        We compare against four representative world-model baselines: <strong>TD-MPC2</strong> (compact latent dynamics), <strong>DreamerV3</strong> (recurrent generative latent), <strong>MuZero</strong> (task-oriented latent dynamics, reproduced offline), and <strong>DINO-WM</strong> (the closest embedding-space baseline). All methods see the same offline trajectories of images, actions, and proprioception.
+      </p>
+
+      <h3 class="title is-4">World-model prediction</h3>
+      <p>
+        TC-WM achieves the lowest latent-prediction error on nearly all tasks &mdash; especially in manipulation &mdash; while remaining competitive in image-space reconstruction. Compressing frozen visual embeddings preserves key structure and yields a more stable state space for rollout.
       </p>
     </div>
+    <img class="figure-img" src="./static/figures/png/pred_loss.png" alt="World model prediction accuracy across nine environments: Prediction Reconstruction Loss (PR) and Latent State Prediction Loss (LP)">
+    <p class="figure-caption"><strong>World-model prediction accuracy.</strong> Prediction Reconstruction Loss (PR) and Latent State Prediction Loss (LP); lower is better, over 300k training steps.</p>
 
-    <img class="figure-img" src="./static/figures/png/plan_compare_cem_ldp.png" alt="Planning success comparison using CEM and latent diffusion planners">
-    <p class="figure-caption">Planning performance: TC-WM improves success rates in both CEM (navigation/low-dimensional action) and LDP (manipulation/high-dimensional action) settings.</p>
+    <img class="figure-img" src="./static/figures/png/lift_can_joint.png" alt="Open-loop rollouts on Robomimic Lift (left) and Can (right) showing TC-WM better preserves contact events and gripper motion">
+    <p class="figure-caption"><strong>Open-loop rollouts on Robomimic.</strong> <code>Lift</code> (left half) and <code>Can</code> (right half). TC-WM better preserves contact events, gripper motion, and object placement over long horizons.</p>
 
-    <img class="figure-img" src="./static/figures/png/pred_loss.png" alt="Prediction reconstruction and latent prediction losses across multiple environments">
-    <p class="figure-caption">World-model prediction metrics over training: TC-WM maintains lower latent prediction error across most evaluated tasks.</p>
-
-    <div class="columns is-multiline">
-      <div class="column is-12-mobile is-4-desktop">
-        <img class="figure-img" src="./static/figures/png/lift.png" alt="Open-loop rollout visualization for Robomimic Lift task">
-        <p class="figure-caption">Lift rollout: more stable long-horizon manipulation and grasping behavior.</p>
-      </div>
-      <div class="column is-12-mobile is-4-desktop">
-        <img class="figure-img" src="./static/figures/png/can.png" alt="Open-loop rollout visualization for Robomimic Can task">
-        <p class="figure-caption">Can rollout: improved object placement consistency near goal states.</p>
-      </div>
-      <div class="column is-12-mobile is-4-desktop">
-        <img class="figure-img" src="./static/figures/png/square.png" alt="Open-loop rollout visualization for Robomimic Square task">
-        <p class="figure-caption">Square rollout: stronger temporal stability in contact-rich assembly dynamics.</p>
-      </div>
+    <div class="content">
+      <h3 class="title is-4">Planning performance</h3>
+      <p>
+        We use Cross-Entropy Method (CEM) planning for low-dimensional control and Latent Diffusion Planning (LDP) for high-dimensional manipulation. TC-WM matches the strongest baseline on saturated CEM tasks and is the only method that <em>surpasses DINO-WM on every LDP task</em>, where high-dimensional action spaces make task-centric latent dynamics critical.
+      </p>
     </div>
+    <img class="figure-img" src="./static/figures/png/plan_compare_cem_ldp.png" alt="Planning performance: CEM on Maze, Wall, Push-T, Cheetah, Hopper; LDP on Lift, Can, Square">
+    <p class="figure-caption"><strong>Planning performance.</strong> <em>(Top)</em> CEM on <code>Maze</code>, <code>Wall</code>, <code>Push-T</code> (success rate) and <code>Cheetah</code>, <code>Hopper</code> (episode return). <em>(Bottom)</em> LDP on <code>Lift</code>, <code>Can</code>, <code>Square</code>, where TC-WM's task-centric latents matter most.</p>
 
-    <img class="figure-img" src="./static/figures/png/linear_probing_scatter.png" alt="Linear probing results indicating stronger task-centric separability in learned latent representations">
-    <p class="figure-caption">Representation analysis: linear probing indicates stronger encoding of task-relevant factors in TC-WM latents.</p>
+    <div class="content">
+      <h3 class="title is-4">Robustness to unseen perturbations</h3>
+      <p>
+        Under Gaussian noise (&sigma;=0.1) and per-channel color jitter, TC-WM recovers manipulator and object pose under both perturbations; its relative SSIM drop is consistently smaller than DINO-WM's (e.g., &minus;2.5% vs. &minus;4.8% under noise on <code>Lift</code>).
+      </p>
+    </div>
+    <img class="figure-img" src="./static/figures/png/unseen_perturb.png" alt="Rollouts under unseen visual perturbations: Gaussian noise and color jitter">
+    <p class="figure-caption"><strong>Unseen visual perturbations.</strong> <em>Left:</em> Gaussian noise on <code>Square</code> and <code>Can</code>. <em>Right:</em> color jitter on <code>Can</code> and <code>Lift</code>.</p>
+  </div>
+</section>
+
+<section class="section" id="analysis">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3">Analysis</h2>
+
+    <div class="content">
+      <h3 class="title is-4">Linear probing</h3>
+      <p>
+        We probe each method's latent by training a linear regressor to ground-truth full states (proprioception, object pose, goal indicators). TC-WM more accurately recovers these task-centric variables, indicating that its latent is not merely predictive but <em>physically grounded</em>.
+      </p>
+    </div>
+    <img class="figure-img" src="./static/figures/png/linear_probing_scatter.png" alt="Linear probing scatter: stronger encoding of task-relevant factors in TC-WM latents">
+    <p class="figure-caption"><strong>Linear probing analysis.</strong> Stronger linear recovery of physical state from TC-WM's latent compared to embedding-space baselines.</p>
+
+    <div class="content">
+      <h3 class="title is-4">Architecture and module ablations</h3>
+      <p>
+        Random projection performs poorly &mdash; dimensionality reduction alone is not enough. DINOv2 and DINOv3 give the strongest foundation features; Cosmos is weaker in this setting. Among projection heads, the <em>linear</em> map gives the best balance between planning success and embedding reconstruction, consistent with the affine-identifiability prediction from the theory.
+      </p>
+    </div>
+    <img class="figure-img" src="./static/figures/png/architecture_ablation.png" alt="Architecture and projection-head ablations on Robomimic: success rate and SSIM">
+    <p class="figure-caption"><strong>Architecture/module ablations on Robomimic.</strong> <em>(a)</em> Visual-encoder choice. <em>(b)</em> Projection-head choice. Success rate (left) and SSIM (right).</p>
+
+    <div class="content">
+      <h3 class="title is-4">Loss components</h3>
+      <p>
+        Removing embedding reconstruction causes the largest collapse &mdash; it is what anchors the compact latent to the foundation manifold. Removing proprioceptive supervision preserves SSIM but lowers success rate: alignment shapes the latent for <em>control</em> rather than visual fidelity. The <em>z<sup>s</sup></em>/<em>z<sup>c</sup></em> split dimension has only a modest effect.
+      </p>
+    </div>
+    <img class="figure-img" src="./static/figures/png/loss_ablation.png" alt="Loss component ablation on Lift: planning success rate and SSIM under removed loss terms">
+    <p class="figure-caption"><strong>Loss-component ablation</strong> on <code>Lift</code>. <em>L<sub>rec</sub>=0</em> collapses both planning and visual fidelity; proprioceptive supervision is essential for planning; latent split dimension has modest effect.</p>
   </div>
 </section>
 
