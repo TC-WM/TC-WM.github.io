@@ -35,11 +35,10 @@
   </div>
   <div id="tcwm-navbar" class="navbar-menu">
     <div class="navbar-start nav-center">
-      <a class="navbar-item" href="#overview">Overview</a>
-      <a class="navbar-item" href="#method">Method</a>
-      <a class="navbar-item" href="#datasets">Environments</a>
-      <a class="navbar-item" href="#results">Results</a>
       <a class="navbar-item" href="#rollouts">Rollouts</a>
+      <a class="navbar-item" href="#results">Results</a>
+      <a class="navbar-item" href="#datasets">Environments</a>
+      <a class="navbar-item" href="#method">Method</a>
       <a class="navbar-item" href="#ablation">Ablation</a>
     </div>
   </div>
@@ -67,150 +66,9 @@
   </div>
 </section>
 
-<section class="section" id="abstract">
-  <div class="container is-max-desktop">
-    <div class="abstract-block">
-      <h2 class="title is-3 has-text-centered">Abstract</h2>
-      <p class="abstract-text">
-        World-model latents are typically either learned from pixels with limited semantic structure or inherited from frozen visual foundation models with excessive task-irrelevant detail &mdash; both poorly matched to downstream planning. We propose <strong>TC-WM</strong>, which treats the pretrained embedding space as a <em>semantic scaffold</em> rather than the final state space. TC-WM linearly projects high-dimensional visual embeddings into a compact latent, aligns a designated subspace with the agent's physical state via contrastive learning, and reconstructs embeddings to preserve useful visual structure. Theoretically, TC-WM identifies the task-centric latent factors up to an invertible transformation. Empirically, TC-WM enables zero-shot planning across nine offline benchmarks spanning navigation, locomotion, and manipulation, achieving stronger world-model quality and more precise control than state-of-the-art baselines.
-      </p>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="overview">
-  <div class="container is-max-desktop">
-    <h2 class="title is-3">Overview</h2>
-    <div class="content">
-      <p>
-        Foundation embeddings encode textures, lighting, and backgrounds &mdash; not control. When used directly as a world-model latent (e.g., DINO-WM, V-JEPA), the model spends capacity on irrelevant variation. The cost is acute under high-dimensional action: <code>Maze</code> uses 2-D actions, but Robomimic requires a 7-DoF arm with 43-D proprioception, where every irrelevant latent dimension is wasted planning capacity. TC-WM treats the embedding as a <em>scaffold</em>: a designated latent subspace is aligned with proprioception via contrastive learning, while the complementary subspace stays anchored to the foundation manifold through embedding reconstruction. The result is a compact latent that is both physically grounded and predictively sufficient.
-      </p>
-    </div>
-
-    <img class="figure-img" src="./static/figures/png/teaser_five_panel.png" alt="Robomimic highlight: success rate, latent-rollout MSE, linear probing on Lift and Can, and anti-collapse">
-    <p class="figure-caption"><strong>Robomimic highlight.</strong> (1) Success rate. (2) Latent-rollout MSE. (3&ndash;4) Linear probes on <code>Lift</code> and <code>Can</code>. (5) TC-WM avoids the latent collapse seen when rolling out directly on foundation embeddings.</p>
-  </div>
-</section>
-
-<section class="section" id="method">
-  <div class="container is-max-desktop">
-    <h2 class="title is-3">Method</h2>
-    <img class="figure-img figure-main" src="./static/figures/png/network.png" alt="TC-WM architecture: linear projection of joint visual and proprioception embeddings into a compact latent, with task-centric alignment, dynamics, and embedding reconstruction">
-    <p class="figure-caption"><strong>Architecture.</strong> A compact, task-centric latent is extracted from frozen visual embeddings using proprioception as side information.</p>
-
-    <div class="content">
-      <p>The pipeline has six trainable components on top of a frozen visual backbone (e.g., DINOv2):</p>
-      <ul>
-        <li><strong>Joint Embedding</strong> &mdash; concatenate the frozen visual feature with a trainable proprioception embedding.</li>
-        <li><strong>Latent Encoder</strong> &mdash; a linear projection to a compact latent.</li>
-        <li><strong>TC Alignment</strong> &mdash; an InfoNCE contrastive loss aligns a designated subspace with proprioception; an L1 penalty selects the task-centric block by sparsity.</li>
-        <li><strong>Latent Dynamics</strong> &mdash; a ViT transition predicts the next latent from history.</li>
-        <li><strong>TC Dynamics</strong> &mdash; an auxiliary head predicts the next proprioception, enforcing task-centric temporal structure.</li>
-        <li><strong>Embedding Decoder</strong> &mdash; a linear decoder reconstructs the visual embedding, anchoring the latent to the foundation manifold and preventing collapse.</li>
-      </ul>
-      <p>
-        Under standard contextual-dynamics and partial-alignment assumptions, the learned latent is block-wise identifiable and the task-centric block is recovered up to an affine map &mdash; the linear projection plus contrastive alignment thus produces a compact, physically grounded latent, not merely a predictively accurate one.
-      </p>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="datasets">
-  <div class="container is-max-desktop">
-    <h2 class="title is-3">Environments</h2>
-    <div class="content">
-      <p>
-        We evaluate on <strong>nine offline visual-control environments</strong> spanning three task families:
-      </p>
-      <ul>
-        <li><strong>Navigation</strong> &mdash; <code>Maze</code> and <code>Wall</code> (D4RL Point-Maze, 2-D actions).</li>
-        <li><strong>Manipulation</strong> &mdash; <code>Push-T</code> (2-D pusher) and Robomimic's <code>Lift</code>, <code>Can</code>, and <code>Square</code> (7-DoF arm, up to 43-D proprioception).</li>
-        <li><strong>Locomotion</strong> &mdash; <code>Reacher</code>, <code>Cheetah</code>, and <code>Hopper</code> from the DeepMind Control Suite.</li>
-      </ul>
-      <p>
-        All methods are trained on the same offline trajectories of images, actions, and proprioception &mdash; no reward, no online interaction.
-      </p>
-    </div>
-
-    <div class="env-grid">
-      <div class="env-card">
-        <img src="./static/datasets/gifs/point_maze_episode_009.gif" alt="Maze trajectory" loading="lazy">
-        <span class="env-tag">Maze</span>
-      </div>
-      <div class="env-card">
-        <img src="./static/datasets/gifs/wall_single_episode_003.gif" alt="Wall trajectory" loading="lazy">
-        <span class="env-tag">Wall</span>
-      </div>
-      <div class="env-card">
-        <img src="./static/datasets/gifs/episode_006.gif" alt="Push-T trajectory" loading="lazy">
-        <span class="env-tag">Push-T</span>
-      </div>
-      <div class="env-card">
-        <img src="./static/datasets/gifs/episode_00006.gif" alt="Robomimic Lift trajectory" loading="lazy">
-        <span class="env-tag">Lift</span>
-      </div>
-      <div class="env-card">
-        <img src="./static/datasets/gifs/episode_00009.gif" alt="Robomimic Can trajectory" loading="lazy">
-        <span class="env-tag">Can</span>
-      </div>
-      <div class="env-card">
-        <img src="./static/datasets/gifs/square_episode.gif" alt="Robomimic Square trajectory" loading="lazy">
-        <span class="env-tag">Square</span>
-      </div>
-      <div class="env-card">
-        <img src="./static/datasets/gifs/dmc_reacher_mmbench.gif" alt="DMC Reacher trajectory" loading="lazy">
-        <span class="env-tag">Reacher</span>
-      </div>
-      <div class="env-card">
-        <img src="./static/datasets/gifs/dmc_cheetah_mmbench.gif" alt="DMC Cheetah trajectory" loading="lazy">
-        <span class="env-tag">Cheetah</span>
-      </div>
-      <div class="env-card">
-        <img src="./static/datasets/gifs/dmc_hopper_mmbench.gif" alt="DMC Hopper trajectory" loading="lazy">
-        <span class="env-tag">Hopper</span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="results">
-  <div class="container is-max-desktop">
-    <h2 class="title is-3">Results</h2>
-    <div class="content">
-      <p>
-        We compare against <strong>TD-MPC2</strong> (compact latent dynamics), <strong>DreamerV3</strong> (recurrent generative latent), <strong>MuZero</strong> (task-oriented latent, reproduced offline), and <strong>DINO-WM</strong> (the closest embedding-space baseline), all trained on the same offline trajectories.
-      </p>
-    </div>
-
-    <img class="figure-img" src="./static/figures/png/pred_loss.png" alt="World model prediction accuracy across nine environments">
-    <p class="figure-caption"><strong>World-model prediction.</strong> TC-WM achieves the lowest latent-prediction error on nearly all tasks while remaining competitive on image reconstruction. PR and LP, lower is better, 300k training steps.</p>
-
-    <img class="figure-img" src="./static/figures/png/plan_compare_cem_ldp.png" alt="Planning performance under CEM and LDP">
-    <p class="figure-caption"><strong>Planning.</strong> CEM on <code>Maze</code> / <code>Wall</code> / <code>Push-T</code> (success rate) and <code>Cheetah</code> / <code>Hopper</code> (return); LDP on <code>Lift</code> / <code>Can</code> / <code>Square</code>. TC-WM matches the strongest baseline on saturated CEM tasks and is the only method that surpasses DINO-WM on every LDP task.</p>
-
-    <div class="rollout-card" style="margin-top:1.6rem;">
-      <div class="rollout-row is-4">
-        <div class="rollout-cell"><img src="./static/datasets/rollouts/perturb_lift_clean_orig_4fps.gif"   alt="Clean observation"          loading="lazy"><span class="rollout-label">clean input</span></div>
-        <div class="rollout-cell"><img src="./static/datasets/rollouts/perturb_lift_clean_pred_4fps.gif"   alt="TC-WM rollout from clean"   loading="lazy"><span class="rollout-label">TC-WM pred (clean)</span></div>
-        <div class="rollout-cell"><img src="./static/datasets/rollouts/perturb_lift_noisy_input_4fps.gif"  alt="Perturbed observation"      loading="lazy"><span class="rollout-label">noisy input</span></div>
-        <div class="rollout-cell"><img src="./static/datasets/rollouts/perturb_lift_noisy_pred_4fps.gif"   alt="TC-WM rollout from perturbed" loading="lazy"><span class="rollout-label">TC-WM pred (noisy)</span></div>
-      </div>
-      <p class="rollout-task"><code>Lift</code> &nbsp;&middot;&nbsp; Gaussian noise + color jitter</p>
-    </div>
-    <p class="figure-caption"><strong>Unseen perturbations.</strong> Even when the visual encoder sees inputs with additive Gaussian noise and per-channel color jitter never observed during training, TC-WM's open-loop rollout (rightmost panel) preserves the cube's position and the manipulator silhouette at fidelity comparable to the clean-input rollout (second panel) &mdash; relative SSIM drop is consistently smaller than DINO-WM's.</p>
-  </div>
-</section>
-
 <section class="section" id="rollouts">
   <div class="container is-max-desktop">
     <h2 class="title is-3">World Model Rollouts</h2>
-    <div class="content">
-      <p>
-        Per-task qualitative comparison across manipulation, navigation, and locomotion. <strong>Original</strong> is the ground-truth observation sequence;
-        <strong>Reconstruction</strong> is what TC-WM's auxiliary visual decoder produces from the encoded latent (per-frame autoencoding);
-        <strong>TC-WM prediction</strong> is an open-loop multi-step rollout where the model sees only the initial frames and predicts the rest from latent dynamics. Compact, task-centric latents recover gripper motion, agent navigation, and body articulation over long horizons.
-      </p>
-    </div>
 
     <div class="rollout-grid">
       <div class="rollout-card">
@@ -269,6 +127,85 @@
       </div>
       -->
     </div>
+  </div>
+</section>
+
+<section class="section" id="results">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3">Results</h2>
+
+    <img class="figure-img" src="./static/figures/png/teaser_five_panel.png" alt="Robomimic highlight: success rate, latent-rollout MSE, linear probing on Lift and Can, and anti-collapse">
+    <p class="figure-caption"><strong>Robomimic highlight.</strong> (1) Success rate. (2) Latent-rollout MSE. (3&ndash;4) Linear probes on <code>Lift</code> and <code>Can</code>. (5) TC-WM avoids the latent collapse seen when rolling out directly on foundation embeddings.</p>
+
+    <img class="figure-img" src="./static/figures/png/pred_loss.png" alt="World model prediction accuracy across nine environments">
+    <p class="figure-caption"><strong>World-model prediction.</strong> Lowest latent-prediction error on nearly all tasks; competitive image reconstruction. Lower is better.</p>
+
+    <img class="figure-img" src="./static/figures/png/plan_compare_cem_ldp.png" alt="Planning performance under CEM and LDP">
+    <p class="figure-caption"><strong>Planning.</strong> CEM on <code>Maze</code> / <code>Wall</code> / <code>Push-T</code> / <code>Cheetah</code> / <code>Hopper</code>; LDP on <code>Lift</code> / <code>Can</code> / <code>Square</code>. Only method that surpasses DINO-WM on every LDP task.</p>
+
+    <div class="rollout-card" style="margin-top:1.6rem;">
+      <div class="rollout-row is-4">
+        <div class="rollout-cell"><img src="./static/datasets/rollouts/perturb_lift_clean_orig_4fps.gif"   alt="Clean observation"          loading="lazy"><span class="rollout-label">clean input</span></div>
+        <div class="rollout-cell"><img src="./static/datasets/rollouts/perturb_lift_clean_pred_4fps.gif"   alt="TC-WM rollout from clean"   loading="lazy"><span class="rollout-label">TC-WM pred (clean)</span></div>
+        <div class="rollout-cell"><img src="./static/datasets/rollouts/perturb_lift_noisy_input_4fps.gif"  alt="Perturbed observation"      loading="lazy"><span class="rollout-label">noisy input</span></div>
+        <div class="rollout-cell"><img src="./static/datasets/rollouts/perturb_lift_noisy_pred_4fps.gif"   alt="TC-WM rollout from perturbed" loading="lazy"><span class="rollout-label">TC-WM pred (noisy)</span></div>
+      </div>
+      <p class="rollout-task"><code>Lift</code> &nbsp;&middot;&nbsp; Gaussian noise + color jitter</p>
+    </div>
+    <p class="figure-caption"><strong>Unseen perturbations.</strong> Under additive Gaussian noise and per-channel color jitter never seen during training, TC-WM's open-loop rollout preserves cube position and manipulator silhouette at near-clean fidelity.</p>
+  </div>
+</section>
+
+<section class="section" id="datasets">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3">Environments</h2>
+    <p class="section-lede">Nine offline visual-control tasks: navigation, locomotion, and manipulation &mdash; trained on images + actions + proprioception, no reward.</p>
+    <div class="env-grid">
+      <div class="env-card">
+        <img src="./static/datasets/gifs/point_maze_episode_009.gif" alt="Maze trajectory" loading="lazy">
+        <span class="env-tag">Maze</span>
+      </div>
+      <div class="env-card">
+        <img src="./static/datasets/gifs/wall_single_episode_003.gif" alt="Wall trajectory" loading="lazy">
+        <span class="env-tag">Wall</span>
+      </div>
+      <div class="env-card">
+        <img src="./static/datasets/gifs/episode_006.gif" alt="Push-T trajectory" loading="lazy">
+        <span class="env-tag">Push-T</span>
+      </div>
+      <div class="env-card">
+        <img src="./static/datasets/gifs/episode_00006.gif" alt="Robomimic Lift trajectory" loading="lazy">
+        <span class="env-tag">Lift</span>
+      </div>
+      <div class="env-card">
+        <img src="./static/datasets/gifs/episode_00009.gif" alt="Robomimic Can trajectory" loading="lazy">
+        <span class="env-tag">Can</span>
+      </div>
+      <div class="env-card">
+        <img src="./static/datasets/gifs/square_episode.gif" alt="Robomimic Square trajectory" loading="lazy">
+        <span class="env-tag">Square</span>
+      </div>
+      <div class="env-card">
+        <img src="./static/datasets/gifs/dmc_reacher_mmbench.gif" alt="DMC Reacher trajectory" loading="lazy">
+        <span class="env-tag">Reacher</span>
+      </div>
+      <div class="env-card">
+        <img src="./static/datasets/gifs/dmc_cheetah_mmbench.gif" alt="DMC Cheetah trajectory" loading="lazy">
+        <span class="env-tag">Cheetah</span>
+      </div>
+      <div class="env-card">
+        <img src="./static/datasets/gifs/dmc_hopper_mmbench.gif" alt="DMC Hopper trajectory" loading="lazy">
+        <span class="env-tag">Hopper</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="method">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3">Method</h2>
+    <img class="figure-img figure-main" src="./static/figures/png/network.png" alt="TC-WM architecture: linear projection of joint visual and proprioception embeddings into a compact latent, with task-centric alignment, dynamics, and embedding reconstruction">
+    <p class="figure-caption"><strong>Architecture.</strong> A frozen visual backbone is linearly projected into a compact latent; a designated subspace is aligned with proprioception via InfoNCE; a ViT predicts latent dynamics; a linear decoder reconstructs the embedding to prevent collapse. Under partial alignment, the task-centric block is identifiable up to an affine map.</p>
   </div>
 </section>
 
