@@ -40,7 +40,7 @@
       <a class="navbar-item" href="#method">Method</a>
       <a class="navbar-item" href="#results">Results</a>
       <a class="navbar-item" href="#rollouts">Rollouts</a>
-      <a class="navbar-item" href="#ablation">Ablation</a>
+      <a class="navbar-item" href="#analysis">Analysis</a>
     </div>
   </div>
 </nav>
@@ -151,6 +151,9 @@
     <img class="figure-img" src="./static/figures/png/plan_compare_cem_ldp.png" alt="Planning performance under CEM and LDP">
     <p class="figure-caption"><strong>Planning.</strong> CEM on <code>Maze</code> / <code>Wall</code> / <code>Push-T</code> / <code>Cheetah</code> / <code>Hopper</code>; LDP on <code>Lift</code> / <code>Can</code> / <code>Square</code>. Only method that surpasses DINO-WM on every LDP task.</p>
 
+    <img class="figure-img" src="./static/figures/png/architecture_ablation.png" alt="Architecture and projection-head ablations on Robomimic">
+    <p class="figure-caption"><strong>Architecture / projection ablations</strong> on <code>Robomimic</code>. Visual encoder / latent-source choice (a) and projection-head ablation (b), each showing success rate on the left and mirrored SSIM on the right. RP denotes randomly projected DINOv2 embeddings. Linear projection is the best; DINOv2 and DINOv3 dominate as foundation encoders.</p>
+
     <div class="rollout-card" style="margin-top:1.6rem;">
       <div class="rollout-row is-4">
         <div class="rollout-cell"><img src="./static/datasets/rollouts/perturb_lift_clean_orig_4fps.gif"   alt="Clean observation"          loading="lazy"><span class="rollout-label">clean input</span></div>
@@ -227,12 +230,9 @@
   </div>
 </section>
 
-<section class="section" id="ablation">
+<section class="section" id="analysis">
   <div class="container is-max-desktop">
-    <h2 class="title is-3">Ablation</h2>
-
-    <img class="figure-img" src="./static/figures/png/architecture_ablation.png" alt="Architecture and projection-head ablations on Robomimic">
-    <p class="figure-caption"><strong>Architecture / projection ablations.</strong> Random projection fails &mdash; dimensionality reduction alone is not enough. DINOv2 and DINOv3 dominate as foundation encoders. The linear projection head is best, consistent with affine-identifiability.</p>
+    <h2 class="title is-3">Analysis</h2>
 
     <img class="figure-img" src="./static/figures/png/loss_ablation.png" alt="Loss component ablation on Lift">
     <p class="figure-caption"><strong>Loss components</strong> on <code>Lift</code>. Removing embedding reconstruction collapses both planning and visual fidelity; removing proprioceptive supervision lowers success rate while preserving SSIM; the latent split dimension matters little.</p>
