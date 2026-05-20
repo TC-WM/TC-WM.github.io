@@ -83,8 +83,15 @@
 
 <section class="section figure-teaser">
   <div class="container is-max-desktop">
+    <img class="figure-img" src="./static/figures/png/world_model_variants.png" alt="Comparison of world-model paradigms (a)-(c) and TC-WM (d)-(e)">
+    <p class="figure-caption"><strong>Figure 1: Comparison of world-model paradigms.</strong> <em>(a)</em> Generative WM (MDN-RNN, IRIS) — predict pixels directly. <em>(b)</em> Latent WM (TD-MPC, MuZero) — predict in a learned latent. <em>(c)</em> Embedding WM (DINO-WM, V-JEPA) — predict in a frozen foundation embedding. <em>(d)</em> <strong>TC-WM dynamics</strong> — predict in a compact latent <em>inside</em> the embedding. <em>(e)</em> <strong>Task-centric structure</strong> — align <span style="font-style:italic">z<sup>s</sup></span> with proprioception, anchor <span style="font-style:italic">z<sup>c</sup></span> via embedding reconstruction.</p>
+  </div>
+</section>
+
+<section class="section figure-teaser">
+  <div class="container is-max-desktop">
     <img class="figure-img" src="./static/figures/png/teaser_five_panel.png" alt="Robomimic highlight: success rate, latent-rollout MSE, linear probing on Lift and Can, and anti-collapse">
-    <p class="figure-caption"><strong>Figure 1: Robomimic highlight.</strong> (1) Success rate. (2) Latent-rollout MSE. (3&ndash;4) Linear probes on <code>Lift</code> and <code>Can</code>. (5) TC-WM avoids the latent collapse seen when rolling out directly on foundation embeddings.</p>
+    <p class="figure-caption"><strong>Figure 2: Robomimic highlight.</strong> (1) Success rate. (2) Latent-rollout MSE. (3&ndash;4) Linear probes on <code>Lift</code> and <code>Can</code>. (5) TC-WM avoids the latent collapse seen when rolling out directly on foundation embeddings.</p>
   </div>
 </section>
 
